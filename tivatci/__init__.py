@@ -224,4 +224,5 @@ if __name__ == '__main__':
         np.full(200, 2),
         np.full(300, 0),
         ])
-    model.run(cts, 'result.csv')
+    df = model.run(cts)
+    df.to_csv('result.csv')
