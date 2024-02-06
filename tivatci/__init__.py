@@ -193,17 +193,18 @@ class Model:
             rates.append(rate)
             cps.append(a[0] / self.v1)
             ces.append(a[3] / self.v4)
-
-        plt.figure(figsize=(20, 5))
-        plt.plot(cps, color='red', label='Cp')
-        plt.plot(cts, color='blue', label='Ct')
-        plt.plot(ces, color='green', label='Ce')
-        plt.legend()
+        
+        df = pd.DataFrame({'Cp': cps, 'Ct': cts, 'Ce': ces, 'Rate': rates})
         if filename:
+            plt.figure(figsize=(20, 5))
+            plt.plot(cps, color='red', label='Cp')
+            plt.plot(cts, color='blue', label='Ct')
+            plt.plot(ces, color='green', label='Ce')
+            plt.legend()
             plt.savefig(filename + '.png')
-            pd.DataFrame({'Cp': cps, 'Ct': cts, 'Ce': ces, 'Rate': rates}).to_csv(filename, index=False)    
-        else:
-            plt.show()
+            df.to_csv(filename, index=False)
+        
+        return df
 
 
 def james(sex, wt, ht):
