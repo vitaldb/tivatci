@@ -1,14 +1,14 @@
 import setuptools
 setuptools.setup(
     name="tivatci",
-    version="0.5.1",
+    version="0.5.2",
     author="Hyung-Chul Lee",
     author_email="vital@snu.ac.kr",
     description="Python TIVA/TCI Libray",
     long_description="Python TIVA/TCI Libray",
     long_description_content_type="text/markdown",
     url="https://github.com/vitaldb/pkpd",
-    install_requires=['numpy', 'pandas', 'matplotlib'],
+    install_requires=['numpy', 'pandas', 'matplotlib', 'scipy'],
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
