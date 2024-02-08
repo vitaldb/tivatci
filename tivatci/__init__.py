@@ -374,11 +374,14 @@ if __name__ == '__main__':
     # Compare models
     dfs = []
     names = ['modified marsh', 'schnider', 'eleveld']
+    cts = [4] * 200 + [3] * 200 + [5] * 160 + [2] * 200 + [0] * 500
     names = ['schuttler', 'schmith']
+    cts = [1] * 200 + [1.5] * 200 + [1.2] * 160 + [1] * 200 + [0] * 500
+    conc_unit = 'ug/ml'
+    dose_unit = 'mg'
     styles = ['solid', 'dashed', 'dotted', 'dashdot']
     for name in names:
         model = Model(name, 80, 'M', 75, 172)
-        cts = [4] * 200 + [3] * 200 + [5] * 160 + [2] * 200 + [0] * 500
         dfs.append(model.run(cts))
 
     fig, ax1 = plt.subplots(figsize=(20, 5))
@@ -387,11 +390,11 @@ if __name__ == '__main__':
     for i in range(len(names)):
         ax1.plot(dfs[i]['Cp'], linestyle=styles[i], color='red', label=f'Cp ({names[i]})')
         ax1.plot(dfs[i]['Ce'], linestyle=styles[i], color='green', label=f'Ce ({names[i]})')
-    ax1.set_ylabel('Concentration')
+    ax1.set_ylabel(f'Concentration ({conc_unit})')
     ax1.legend(loc='upper left')
     ax2 = ax1.twinx()
     for i in range(len(names)):
         ax2.plot(dfs[i]['Infused'], linestyle=styles[i], color='gray', label=f'Infused ({names[i]})')
-    ax2.set_ylabel('Infused')
+    ax2.set_ylabel(f'Infused ({dose_unit})')
     ax2.legend(loc='upper right')
     plt.show()
