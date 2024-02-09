@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 dfs = []
 names = ['modified marsh', 'schnider', 'eleveld']
 cts = [4] * 200 + [3] * 200 + [5] * 160 + [2] * 200 + [0] * 500
-names = ['schuttler', 'schmith']
-cts = [1] * 200 + [1.5] * 200 + [1.2] * 160 + [1] * 200 + [0] * 500
+# names = ['schuttler', 'schmith']
+# cts = [1] * 200 + [1.5] * 200 + [1.2] * 160 + [1] * 200 + [0] * 500
 conc_unit = 'ug/ml'
 dose_unit = 'mg'
 styles = ['solid', 'dashed', 'dotted', 'dashdot']
