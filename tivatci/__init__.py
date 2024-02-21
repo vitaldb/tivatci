@@ -140,8 +140,8 @@ class Model:
                 0.595 - 0.007 * (age - 40))  # minto's ke0
         elif name == 'schuttler': # remimazolam
             # Schüttler et al. Pharmacokinetics and Pharmacodynamics of Remimazolam (CNS 7056) after Continuous Infusion in Healthy Male Volunteers: Part I. Pharmacokinetics and Clinical Pharmacodynamics. Anesthesiology. 2020 Apr;132(4):636-651.
-            self.setq(4.7 / 75 * weight, 14.5, 15.5, 
-                1.14, 1.04, 0.93, 
+            self.setq(4.7 * weight / 75, 14.5, 15.5, 
+                1.14, 1.04, 0.19, 
                 0.27)
         elif name == 'schmith':
             # Zhou et al. Population pharmacokinetic/pharmacodynamic modeling for remimazolam in the induction and maintenance of general anesthesia in healthy subjects and in surgical subjects. J Clin Anesth. 2020
