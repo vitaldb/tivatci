@@ -80,40 +80,28 @@ class Model:
             age_ref = 35
             weight_ref = 70
             ht_ref = 170
-
-            def ageing(x, age):
-                return np.exp(x * (age - age_ref))
-
-            def sigmoid(x, e50, y):
-                return (x ** y) / ((x ** y) + (e50 ** y))
-
-            def central(x):
-                return sigmoid(x, t12, 1)
-
-            # opioid
             with_opioids = True
-            def opiates(x, present):
-                if present:
-                    return np.exp(x * age)
-                else:
-                    return 1
 
-            # cl1 maturation
+            # age(yrs) to pma(wks)
             pma = age * 52 + 40
             pma_ref = age_ref * 52 + 40
-            cl1_mat = sigmoid(pma, t8, t9)
-            cl1_mat_ref = sigmoid(pma_ref, t8, t9)
-            cl3_mat = sigmoid(pma, t14, 1)
-            cl3_mat_ref = sigmoid(pma_ref, t14, 1)
+
+            cl3_mat = _sigmoid(pma, t14, 1)
+            cl3_mat_ref = _sigmoid(pma_ref, t14, 1)
 
             # lean body mass
             ffm_ref = calc_lbm('M', weight_ref, ht_ref, age_ref, 'al-sallami')
             ffm = calc_lbm(sex, weight, height, age, 'al-sallami')
 
-            v1 = t1 * (central(weight) / central(weight_ref))
-            v2 = t2 * (weight / weight_ref) * ageing(t10, age)
-            v3 = t3 * (ffm / ffm_ref) * opiates(t13, with_opioids)
-            cl1 = (t4 if sex == 'M' else t15) * ((weight / weight_ref) ** 0.75) * (cl1_mat / cl1_mat_ref) * opiates(t11, with_opioids)
+            v1 = t1 * (_sigmoid(weight, t12, 1) / _sigmoid(weight_ref, t12, 1))
+            v2 = t2 * (weight / weight_ref) * np.exp(t10 * (age - age_ref))
+            v3 = t3 * ffm / ffm_ref
+            if with_opioids:
+                v3 *= np.exp(t13 * age)
+            cl1 = (t4 if sex == 'M' else t15) * ((weight / weight_ref) ** 0.75)
+            cl1 *= _sigmoid(pma, t8, t9) / _sigmoid(pma_ref, t8, t9)  # age maturation
+            if with_opioids:
+                cl1 *= np.exp(t11 * age)
             cl2 = t5 * (v2 / t2) ** 0.75 * (1 + t16 * (1 - cl3_mat))
             cl3 = t6 * (v3 / t3) ** 0.75 * (cl3_mat / cl3_mat_ref)
             ke0 = 0.146 * ((weight / weight_ref) ** -0.25)
@@ -184,20 +172,26 @@ class Model:
         self.k31 = k31
         self.ke0 = ke0
 
-    def ce(self, t=None, dose=None, a0=None, ke0=None):
+    def cp(self, tmax=None, dose=None, a=None):
+        '''
+        calculate the plasma concentration
+        '''
+        return self.sim(tmax, dose, a)[:, 0] / self.v1
+
+    def ce(self, tmax=None, dose=None, a=None, ke0=None):
         '''
         calculate the effect site concentration
         '''
-        return self.sim(t, dose, a0, ke0)[:, 3] / self.v1 * self.v1_v4
+        return self.sim(tmax, dose, a, ke0)[:, 3] / self.v1 * self.v1_v4
     
-    def sim(self, t=None, dose=None, a0=None, ke0=None):
+    def sim(self, tmax=None, dose=None, a=None, ke0=None):
         '''
         simulate the movement of drug amount in the compartments
-        t: time in seconds or an array of time (if zero, do while the maximum Ce is reached)
+        tmax: maximum time in seconds for simulation (if None, do while the maximum Ce is reached)
         dose: infused amount at every second ([1] for bolus at time 0, [1] * 10 for infusion for 10 sec, etc.)
         ke0: the elimination rate from the effect site (if None, use the self.ke0)
         a: initial state of the compartments
-        returns: the estimated amount of drugs in the compartments in the shape (t, 4)
+        returns: the estimated amount of drugs in the compartments in the shape (tmax, 4)
         '''
         ret = []
 
@@ -206,14 +200,12 @@ class Model:
         if np.isscalar(dose):
             dose = [dose]
 
-        if a0 is None:
+        if a is None:
             a = np.zeros(4)
-        else:
-            a = np.copy(a0)
 
         last_a4 = 0
-        if t is None:
-            t = 9999
+        if tmax is None:
+            tmax = 9999
 
         if ke0 is None:
             ke0 = self.ke0
@@ -227,11 +219,11 @@ class Model:
         ])
 
         # simulation
-        for i in range(t):
+        for i in range(tmax):
             a = np.matmul(k, a)  # natural decay
             if i < len(dose):
                 a[0] += dose[i]  # infusion
-            if t == 9999:  # when user wants do until maximum Ce is reached
+            if tmax == 9999:  # when user wants do until maximum Ce is reached
                 if a[3] < last_a4:
                     break
                 last_a4 = a[3]
@@ -258,31 +250,49 @@ class Model:
         '''
         return optimize.brentq(lambda ke0, tpeak: self.tpeak(ke0, prec=0.1) - tpeak, a=1e-5, b=100, args=(tpeak))
     
-    def tci(self, ct, a0=None):  # shafer and greg algorithm
+    def udf(self, plasma=False):
         '''
-        calculate the infusion rate to achieve the desired effect site concentration
-        a0: the initial state of the compartments
+        generate the unit disposition function (UDF) for the plasma or the effect site
+        '''
+        if plasma:
+            return self.cp(10, dose=[1]*10) # always maximum at 10 sec
+        else:  # effect site
+            return self.ce(dose=[1]*10)
+
+    def tci(self, ct, a=None, plasma=False):
+        '''
+        calculate the infusion rate to achieve the desired effect site concentration using the Shafer and Greg algorithm
+        a: the initial state of the compartments
         ct: target concentration
         '''
-        if a0 is None:
-            a0 = np.zeros(4)
-        udf = self.ce(dose=[1]*10)  # generate udf
+        if a is None:
+            a = np.zeros(4)
+        
+        # generate udf
+        udf = self.udf(plasma=plasma)
+
         tpeak = len(udf)-1  # initial tpeak
         while True:
-            bes = self.ce(tpeak + 1, a0=a0)  # natural decay of ce
-            if bes[0] > ct: # if the current effect site concentration is higher than the target
-                if bes[-1] < ct: # wait until the effect site concentration is lower than the target
-                    return 0, np.where(bes < ct)[0][0]
+            # natural decay
+            if plasma:
+                b = self.cp(tpeak + 1, a=a)
+            else:  # effect site
+                b = self.ce(tpeak + 1, a=a)
+
+            if b[0] > ct: # if the current effect site concentration is higher than the target
+                if b[-1] < ct: # wait until the effect site concentration is lower than the target
+                    return 0, np.where(b < ct)[0][0]
                 return 0, tpeak
-            rate = (ct - bes[-1]) / udf[tpeak]
-            ces = bes + udf[:len(bes)] * rate
-            new_tpeak = np.argmax(ces)
-            if new_tpeak == tpeak or abs(ces[new_tpeak] - ct) <= ct * 0.001:
+            
+            rate = (ct - b[-1]) / udf[tpeak]
+            c = b + udf[:len(b)] * rate
+            new_tpeak = np.argmax(c)
+            if new_tpeak == tpeak or abs(c[new_tpeak] - ct) <= ct * 0.001:
                 break
             tpeak = new_tpeak
         return rate, tpeak
     
-    def run(self, cts, filename=None, maxrate=None):
+    def run(self, cts, filename=None, maxrate=None, plasma=False):
         '''
         simulate the movement of drug amount in the compartments
         returns: DataFrame of Ct, Cp, Ce, and Rate
@@ -298,16 +308,16 @@ class Model:
             ct = cts[i]
             if i >= wait_until or ct != last_ct:
                 last_ct = ct
-                rate, tpeak = self.tci(cts[i], a)
+                rate, tpeak = self.tci(cts[i], a, plasma=plasma)
                 infuse_until = i + 10
                 if maxrate and rate > maxrate:
                     rate = maxrate
                     wait_until = i + 10
                 else:
-                    wait_until = i + tpeak
+                    wait_until = i + tpeak + 1
             if i >= infuse_until:
                 rate = 0
-            a = self.sim(1, dose=rate, a0=a)[-1]
+            a = self.sim(1, dose=rate, a=a)[-1]
             rates.append(rate)
             cps.append(a[0] / self.v1)
             ces.append(a[3] / self.v1 * self.v1_v4)
@@ -323,6 +333,9 @@ class Model:
             df.to_csv(filename, index=False)
         
         return df
+
+def _sigmoid(x, e50, y):
+    return (x ** y) / ((x ** y) + (e50 ** y))
 
 
 def calc_lbm(sex, weight, height, age=None, model='james'):
@@ -353,3 +366,9 @@ def calc_lbm(sex, weight, height, age=None, model='james'):
         elif sex == 'F':
             return (1.11 + ((1 - 1.11) / (1 + (age / 7.1) ** -1.1))) * 37.99 * weight / (35.98 + bmi)
     raise ValueError
+
+if __name__ == '__main__':
+    model = Model('modified marsh', weight=70)
+    # plt.figure(figsize=(20, 5))
+    # plt.plot(model.udf(True), label='plasma')
+    # plt.show()
