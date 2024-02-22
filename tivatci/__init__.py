@@ -151,7 +151,7 @@ class Model:
         elif name == 'wierda':  # rocuronium
             self.setk(45 * weight / 1000, 0.1, 0.21, 0.028, 0.13, 0.01, 0.168)
         elif name == 'cooper':  # rocuronium
-            self.setk(38.5 * weight / 1000, 0.259, 0.163, 0.06, 0.012, 0.119)
+            self.setk(38.5 * weight / 1000, 0.119, 0.259, 0.06, 0.163, 0.012, 0.168)
         elif name == 'saldien':  # rocuronium
             self.setk(35.6 * weight / 1000, 0.126, 0.209, 0.05, 0.163, 0.015, 0.168)
         elif name in ('dehaes', 'de haes'):  # rocuronium
