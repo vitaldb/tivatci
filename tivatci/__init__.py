@@ -148,6 +148,14 @@ class Model:
                 ke0 *= 1.17
             # if asian: self.ke0 *= 1 - 0.48            
             self.setq(v1, v2, v3, cl1, cl2, cl3, ke0)
+        elif name == 'wierda':  # rocuronium
+            self.setk(45 * weight / 1000, 0.1, 0.21, 0.028, 0.13, 0.01, 0.168)
+        elif name == 'cooper':  # rocuronium
+            self.setk(38.5 * weight / 1000, 0.259, 0.163, 0.06, 0.012, 0.119)
+        elif name == 'saldien':  # rocuronium
+            self.setk(35.6 * weight / 1000, 0.126, 0.209, 0.05, 0.163, 0.015, 0.168)
+        elif name in ('dehaes', 'de haes'):  # rocuronium
+            self.setk(42.0 * weight / 1000, 0.0762, 0.124, 0.0214, 0.13, 0.013, 0.15)
         else:    
             raise ValueError('unsupported model')
 

@@ -1,7 +1,7 @@
 import setuptools
 setuptools.setup(
     name="tivatci",
-    version="0.5.4",
+    version="0.5.5",
     author="Hyung-Chul Lee",
     author_email="vital@snu.ac.kr",
     description="Python TIVA/TCI Libray",
