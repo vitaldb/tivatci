@@ -133,15 +133,15 @@ class Model:
                 0.27)
         elif name == 'schmith':
             # Zhou et al. Population pharmacokinetic/pharmacodynamic modeling for remimazolam in the induction and maintenance of general anesthesia in healthy subjects and in surgical subjects. J Clin Anesth. 2020
-            v1 = 2.92 / 70 * weight
-            v2 = 19.1 / 70 * weight
+            v1 = 2.92 * weight / 70
+            v2 = 19.1 * weight / 70
             # if asa3:
             #     v1 *= 1 - 0.56
             #     v2 *= 1.22
-            v3 = 9.81 / 70 * weight
-            cl1 = 61.6 / 70 * weight / 60 * (1.11 if sex == 'F' else 1)
-            cl2 = 22.9 / 70 * weight / 60
-            cl3 = 69.6 / 70 * weight / 60
+            v3 = 9.81 * weight / 70
+            cl1 = 61.6 * weight / 70 * (1.11 if sex == 'F' else 1) / 60
+            cl2 = 22.9 * weight / 70 / 60
+            cl3 = 69.6 * weight / 70 / 60
             ke0 = 8.08 / 60
             bmi = weight / (height / 100) ** 2
             if bmi > 25:
@@ -156,7 +156,42 @@ class Model:
             self.setk(35.6 * weight / 1000, 0.126, 0.209, 0.05, 0.163, 0.015, 0.168)
         elif name in ('dehaes', 'de haes'):  # rocuronium
             self.setk(42.0 * weight / 1000, 0.0762, 0.124, 0.0214, 0.13, 0.013, 0.15)
-        else:    
+        elif name == 'gepts': # sufentanil
+            self.setq(14.3, 63.1, 261.6, 0.92, 1.55, 0.33, ke0) # 10.1097/00000542-199512000-00010
+            
+            #self.ke0 = self.recalc_ke0(5.6 * 60) # 0.176/min = 10.1097/00000542-199101000-00010 (Shafer/Varvel 1991)
+            # the ke0 value above is wrong based on the https://blog.tivatrainer.com/sufentanil-another-mistake-in-the-implementation-in-commercial-target-controlled-infusion-systems
+
+            #self.ke0 = 0.119  # this value is from the stanpump code, but it is not clear where it comes from
+            self.ke0 = 0.112  # Implementation of Gepts model in Fresenius Base Primea, Scott, Cooke, & Stanski, 1991, K for half life = 6.2 min
+        elif name == 'hannivoort': # dexemedetomidine
+            # 10.1097/ALN.0000000000000740
+            self.setq(1.78 * (weight / 70), 30.3 * (weight / 70), 52.0 * (weight / 70),
+                      0.686 * (weight / 70) ** 0.75, 2.98 * (weight / 70) ** 0.75, 0.602 * (weight / 70) ** 0.75)
+            self.ke0 = 0.120 # 10.1093/bja/aex085 (Colin et al. 2017)
+        elif name == 'scott': # fentanyl 
+            # # k = 0.693 / hl
+            # # vd = cl * hl / 0.693
+            # hl2 = 1.0 # min
+            # hl3 = 18.5 # min
+            # q1 = 0.574 # L/min
+            # q2 = 4.005 # L/min
+            # q3 = 1.952 # L/min
+            # v1 = 12.7
+            # v2 = q2 * hl2 / 0.693 # = np.log(2)
+            # v3 = q3 * hl3 / 0.693 # = np.log(2)
+            # self.setq(v1, v2, v3, q1, q2, q3) # 1987, J Pharmacol Exp Ther 1987 Jan;240(1):159-166
+            
+            self.setk(12.7, .056, .373, .180, .096, .0077) # from stanpump code
+            # = self.setq(12.7, 49.34, 296.88, 0.71, 4.74, 2.29) # from pkpdtools.com
+            self.ke0 = 0.693 / 4.7 # 4.7 min half life
+        # elif name == 'shafer': # fentanyl (unweighted)
+        #     self.setq(6.09, 28.1, 228, .504, 2.87, 1.37) # Anesthesiology. 1990;73:1091-102. 10.1097/00000542-199012000-00005
+        #     self.ke0 = self.recalc_ke0(3.6 * 60) # 10.1097/00000542-199101000-00010 (Shafer/Varvel 1991)
+        # elif name in ('mcclain', 'hug'): # fentanyl
+        #     self.setk(0.356 * weight, 0.041, 0.185, 0.141, 0.103, 0.020)
+        #     self.ke0 = self.recalc_ke0(3.6 * 60) # 10.1097/00000542-199101000-00010 (Shafer/Varvel 1991)
+        else:
             raise ValueError('unsupported model')
 
     def setq(self, v1=0, v2=0, v3=0, q1=0, q2=0, q3=0, ke0=0):
@@ -251,9 +286,10 @@ class Model:
         tpeak = len(model.ce(dose=1, ke0=ke0 * prec)) * prec
         return tpeak
     
-    def recalculate_ke0(self, tpeak):
+    def recalc_ke0(self, tpeak):
         '''
-        find optimal ke0 that minimise the difference between the estimated tpeak and the actual tpeak
+        find optimal ke0 that minimize the difference between the estimated tpeak and the actual tpeak
+        tpeak: the actual time to reach the maximum effect in seconds
         returns: the optimal ke0 in /min
         '''
         return optimize.brentq(lambda ke0, tpeak: self.tpeak(ke0, prec=0.1) - tpeak, a=1e-5, b=100, args=(tpeak))
@@ -341,6 +377,9 @@ class Model:
             df.to_csv(filename, index=False)
         
         return df
+    
+    def __repr__(self):
+        return f'Model(v1={self.v1:.2f}, k10={self.k10:.4f}, k12={self.k12:.4f}, k13={self.k13:.4f}, k21={self.k21:.4f}, k31={self.k31:.4f}, ke0={self.ke0:.4f})'
 
 def _sigmoid(x, e50, y):
     return (x ** y) / ((x ** y) + (e50 ** y))
@@ -376,7 +415,7 @@ def calc_lbm(sex, weight, height, age=None, model='james'):
     raise ValueError
 
 if __name__ == '__main__':
-    model = Model('modified marsh', weight=70)
+    print(Model('gepts'))
     # plt.figure(figsize=(20, 5))
     # plt.plot(model.udf(True), label='plasma')
     # plt.show()

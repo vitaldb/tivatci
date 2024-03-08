@@ -47,9 +47,10 @@
 <li><a class="reference internal" href="#">Welcome to TIVA/TCI!</a><ul>
 <li><a class="reference internal" href="#tivatci.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul>
 <li><a class="reference internal" href="#tivatci.Model.__init__"><code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#tivatci.Model.__repr__"><code class="docutils literal notranslate"><span class="pre">Model.__repr__()</span></code></a></li>
 <li><a class="reference internal" href="#tivatci.Model.ce"><code class="docutils literal notranslate"><span class="pre">Model.ce()</span></code></a></li>
 <li><a class="reference internal" href="#tivatci.Model.cp"><code class="docutils literal notranslate"><span class="pre">Model.cp()</span></code></a></li>
-<li><a class="reference internal" href="#tivatci.Model.recalculate_ke0"><code class="docutils literal notranslate"><span class="pre">Model.recalculate_ke0()</span></code></a></li>
+<li><a class="reference internal" href="#tivatci.Model.recalc_ke0"><code class="docutils literal notranslate"><span class="pre">Model.recalc_ke0()</span></code></a></li>
 <li><a class="reference internal" href="#tivatci.Model.run"><code class="docutils literal notranslate"><span class="pre">Model.run()</span></code></a></li>
 <li><a class="reference internal" href="#tivatci.Model.setk"><code class="docutils literal notranslate"><span class="pre">Model.setk()</span></code></a></li>
 <li><a class="reference internal" href="#tivatci.Model.setq"><code class="docutils literal notranslate"><span class="pre">Model.setq()</span></code></a></li>
@@ -105,6 +106,12 @@ time constants are always in min^-1</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="tivatci.Model.__repr__">
+<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tivatci.Model.__repr__" title="Link to this definition"></a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="tivatci.Model.ce">
 <span class="sig-name descname"><span class="pre">ce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ke0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tivatci.Model.ce" title="Link to this definition"></a></dt>
 <dd><p>calculate the effect site concentration</p>
@@ -117,9 +124,10 @@ time constants are always in min^-1</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tivatci.Model.recalculate_ke0">
-<span class="sig-name descname"><span class="pre">recalculate_ke0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tpeak</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tivatci.Model.recalculate_ke0" title="Link to this definition"></a></dt>
-<dd><p>find optimal ke0 that minimise the difference between the estimated tpeak and the actual tpeak
+<dt class="sig sig-object py" id="tivatci.Model.recalc_ke0">
+<span class="sig-name descname"><span class="pre">recalc_ke0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tpeak</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tivatci.Model.recalc_ke0" title="Link to this definition"></a></dt>
+<dd><p>find optimal ke0 that minimize the difference between the estimated tpeak and the actual tpeak
+tpeak: the actual time to reach the maximum effect in seconds
 returns: the optimal ke0 in /min</p>
 </dd></dl>
 
