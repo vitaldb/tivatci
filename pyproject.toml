@@ -1,0 +1,11 @@
+[project]
+name = "tivatci"
+version = "0.5.8"
+description = "Python TIVA/TCI Library"
+readme = "README.md"
+requires-python = ">=3.0"
+license = "MIT"
+authors = [
+    {name = "Hyung-Chul Lee", email = "vital@snu.ac.kr"}
+]
+dependencies = ["numpy", "pandas", "matplotlib", "scipy"]
